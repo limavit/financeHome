@@ -2,6 +2,8 @@ package com.vitor.controlefinanceiro.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -71,8 +73,9 @@ fun LabeledTextField(label: String, value: String, onValueChange: (String) -> Un
 }
 
 @Composable
+@OptIn(ExperimentalLayoutApi::class)
 fun <T> ChipSelector(items: List<T>, selected: T, label: (T) -> String, onSelected: (T) -> Unit) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
         items.forEach { item ->
             FilterChip(selected = item == selected, onClick = { onSelected(item) }, label = { Text(label(item)) })
         }

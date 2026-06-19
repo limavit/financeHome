@@ -43,7 +43,7 @@ fun IncomeListScreen(viewModel: IncomeViewModel = koinViewModel()) {
             if (incomes.isEmpty()) item { EmptyText("Nenhuma entrada cadastrada.") }
             items(incomes) { income ->
                 SectionCard(income.description) {
-                    Text("${MoneyFormatter.formatCentsToBrl(income.amountCents)} - ${income.type}")
+                    Text("${MoneyFormatter.formatCentsToBrl(income.amountCents)} - ${income.type.label()}")
                     Text(DateUtils.millisToDate(income.date).toString())
                     TextButton(onClick = { viewModel.delete(income.id) }) { Text("Excluir") }
                 }
@@ -65,7 +65,15 @@ private fun IncomeFormDialog(onDismiss: () -> Unit, onSave: (IncomeFormState) ->
     AppDialog("Nova entrada", onDismiss, { onSave(form) }) {
         LabeledTextField("Descricao", form.description, { form = form.copy(description = it) })
         LabeledTextField("Valor", form.amount, { form = form.copy(amount = it) })
-        ChipSelector(IncomeType.entries.toList(), form.type, { it.name }, { form = form.copy(type = it) })
+        ChipSelector(IncomeType.entries.toList(), form.type, { it.label() }, { form = form.copy(type = it) })
         LabeledTextField("Observacao", form.notes, { form = form.copy(notes = it) })
     }
+}
+
+private fun IncomeType.label(): String = when (this) {
+    IncomeType.SALARIO -> "Salario"
+    IncomeType.ADIANTAMENTO -> "Adiantamento"
+    IncomeType.RETIRADA_INVESTIMENTO -> "Retirada de investimento"
+    IncomeType.PRESTACAO_SERVICO -> "Prestacao de servico"
+    IncomeType.OUTROS -> "Outros"
 }

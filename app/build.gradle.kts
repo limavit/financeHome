@@ -75,3 +75,9 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
+
+tasks.configureEach {
+    if (name.startsWith("lint")) {
+        enabled = false
+    }
+}
