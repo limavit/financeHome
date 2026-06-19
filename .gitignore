@@ -1,0 +1,51 @@
+# Gradle
+.gradle/
+build/
+**/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Android local SDK/config
+local.properties
+.android-sdk/
+
+# APKs and generated packages
+*.apk
+*.ap_
+*.aab
+*.aar
+
+# Kotlin/Java
+*.class
+*.jar
+*.war
+*.ear
+hs_err_pid*
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+.navigation/
+captures/
+
+# Generated Android files
+app/release/
+app/debug/
+
+# Keystores and signing
+*.jks
+*.keystore
+keystore.properties
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Codex/local generated reports
+build/reports/
+app/build/reports/
