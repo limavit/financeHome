@@ -3,11 +3,10 @@ package com.vitor.controlefinanceiro.ui.screens.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vitor.controlefinanceiro.core.date.DateUtils
-import com.vitor.controlefinanceiro.data.local.entity.ExpenseEntity
-import com.vitor.controlefinanceiro.data.local.entity.IncomeEntity
 import com.vitor.controlefinanceiro.data.repository.CategoryRepository
 import com.vitor.controlefinanceiro.data.repository.DashboardRepository
 import com.vitor.controlefinanceiro.data.repository.DashboardSummary
+import com.vitor.controlefinanceiro.data.repository.RecentTransaction
 import com.vitor.controlefinanceiro.domain.usecase.GenerateRecurringExpensesUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -19,7 +18,8 @@ import kotlinx.coroutines.launch
 data class DashboardUiState(
     val year: Int = DateUtils.today().year,
     val month: Int = DateUtils.today().monthValue,
-    val summary: DashboardSummary = DashboardSummary()
+    val summary: DashboardSummary = DashboardSummary(),
+    val recent: List<RecentTransaction> = emptyList()
 )
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
@@ -32,9 +32,10 @@ class DashboardViewModel(
 
     val uiState = selected
         .flatMapLatest { (year, month) ->
-            dashboardRepository.observeSummary(year, month).combine(selected) { summary, pair ->
-                DashboardUiState(pair.first, pair.second, summary)
-            }
+            dashboardRepository.observeSummary(year, month)
+                .combine(dashboardRepository.observeRecent()) { summary, recent ->
+                    DashboardUiState(year, month, summary, recent)
+                }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardUiState())
 

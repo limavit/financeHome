@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 
 data class CardFormState(
+    val id: String? = null,
     val nickname: String = "",
     val institution: String = "",
     val limit: String = "",
@@ -36,25 +37,49 @@ class CreditCardViewModel(
 
     fun selectInvoice(cardId: String, year: Int, month: Int) { selectedInvoice.value = Triple(cardId, year, month) }
 
+    fun changeInvoiceMonth(delta: Int) {
+        val (cardId, year, month) = selectedInvoice.value
+        if (cardId.isBlank()) return
+        val newMonth = month + delta
+        val (y, m) = when {
+            newMonth < 1 -> (year - 1) to 12
+            newMonth > 12 -> (year + 1) to 1
+            else -> year to newMonth
+        }
+        selectedInvoice.value = Triple(cardId, y, m)
+    }
+
     fun save(form: CardFormState, limitCents: Long?) = viewModelScope.launch {
         runCatching {
             val now = DateUtils.nowMillis()
+            val isEdit = !form.id.isNullOrBlank()
+            val existing = if (isEdit) repository.getById(form.id!!) else null
+            val id = form.id ?: UUID.randomUUID().toString()
             repository.save(
                 CreditCardEntity(
-                    id = UUID.randomUUID().toString(),
+                    id = id,
                     nickname = form.nickname.trim(),
                     institution = form.institution.takeIf { it.isNotBlank() },
                     limitCents = limitCents,
                     closingDay = form.closingDay.toIntOrNull() ?: 0,
                     dueDay = form.dueDay.toIntOrNull() ?: 0,
-                    active = true,
-                    createdAt = now,
+                    active = existing?.active ?: true,
+                    createdAt = existing?.createdAt ?: now,
                     updatedAt = now
                 )
             )
-            message.value = "Cartao salvo."
+            message.value = if (isEdit) "Cartao atualizado." else "Cartao salvo."
         }.onFailure { message.value = it.message ?: "Nao foi possivel salvar." }
     }
+
+    fun toFormState(card: CreditCardEntity): CardFormState = CardFormState(
+        id = card.id,
+        nickname = card.nickname,
+        institution = card.institution.orEmpty(),
+        limit = card.limitCents?.let { (it / 100.0).toString().replace('.', ',') }.orEmpty(),
+        closingDay = card.closingDay.toString(),
+        dueDay = card.dueDay.toString()
+    )
 
     fun setActive(card: CreditCardEntity, active: Boolean) = viewModelScope.launch {
         repository.save(card.copy(active = active, updatedAt = DateUtils.nowMillis()))

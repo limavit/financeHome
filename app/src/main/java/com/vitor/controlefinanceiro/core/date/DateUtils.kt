@@ -4,9 +4,12 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.ResolverStyle
 
 object DateUtils {
     val zone: ZoneId = ZoneId.systemDefault()
+    val brDateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/uuuu").withResolverStyle(ResolverStyle.STRICT)
 
     fun today(): LocalDate = LocalDate.now(zone)
 
@@ -26,5 +29,13 @@ object DateUtils {
     fun monthEndMillis(year: Int, month: Int): Long {
         val ym = YearMonth.of(year, month)
         return LocalDate.of(year, month, ym.lengthOfMonth()).toMillis()
+    }
+
+    fun formatBrDate(date: LocalDate): String = brDateFormatter.format(date)
+
+    fun parseBrDateOrNull(input: String): LocalDate? {
+        val trimmed = input.trim()
+        if (trimmed.isBlank()) return null
+        return runCatching { LocalDate.parse(trimmed, brDateFormatter) }.getOrNull()
     }
 }

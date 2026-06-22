@@ -1,6 +1,7 @@
 package com.vitor.controlefinanceiro.ui.screens.cards
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -19,10 +20,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.vitor.controlefinanceiro.core.money.MoneyFormatter
+import com.vitor.controlefinanceiro.data.local.entity.CreditCardEntity
 import com.vitor.controlefinanceiro.ui.components.AppDialog
 import com.vitor.controlefinanceiro.ui.components.EmptyText
 import com.vitor.controlefinanceiro.ui.components.LabeledTextField
 import com.vitor.controlefinanceiro.ui.components.SectionCard
+import com.vitor.controlefinanceiro.ui.components.monthLabel
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -32,7 +35,8 @@ fun CreditCardListScreen(viewModel: CreditCardViewModel = koinViewModel()) {
     val selected by viewModel.selectedInvoice.collectAsState()
     val message by viewModel.message.collectAsState()
     var showForm by remember { mutableStateOf(false) }
-    Scaffold(floatingActionButton = { FloatingActionButton(onClick = { showForm = true }) { Text("+") } }) { padding ->
+    var editing by remember { mutableStateOf<CreditCardEntity?>(null) }
+    Scaffold(floatingActionButton = { FloatingActionButton(onClick = { editing = null; showForm = true }) { Text("+") } }) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             item { Text("Cartoes") }
             if (cards.isEmpty()) item { EmptyText("Nenhum cartao cadastrado.") }
@@ -43,14 +47,20 @@ fun CreditCardListScreen(viewModel: CreditCardViewModel = koinViewModel()) {
                     Text("Status: ${if (card.active) "ativo" else "inativo"}")
                     TextButton(onClick = { viewModel.selectInvoice(card.id, selected.second, selected.third) }) { Text("Ver fatura do mes") }
                     TextButton(onClick = { viewModel.setActive(card, !card.active) }) { Text(if (card.active) "Desativar" else "Ativar") }
+                    TextButton(onClick = { editing = card; showForm = true }) { Text("Editar") }
                 }
             }
             if (selected.first.isNotBlank()) {
                 item {
-                    SectionCard("Fatura ${selected.third}/${selected.second}") {
-                        Text("Total: ${MoneyFormatter.formatCentsToBrl(invoice.sumOf { it.amountCents })}")
+                    SectionCard("Fatura ${monthLabel(selected.second, selected.third)}") {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            TextButton(onClick = { viewModel.changeInvoiceMonth(-1) }) { Text("<") }
+                            Text("Total: ${MoneyFormatter.formatCentsToBrl(invoice.sumOf { it.amountCents })}")
+                            TextButton(onClick = { viewModel.changeInvoiceMonth(1) }) { Text(">") }
+                        }
                     }
                 }
+                if (invoice.isEmpty()) item { EmptyText("Nenhum gasto nesta fatura.") }
                 items(invoice) { expense ->
                     SectionCard(expense.name) {
                         Text("${MoneyFormatter.formatCentsToBrl(expense.amountCents)} - ${expense.status}")
@@ -60,19 +70,22 @@ fun CreditCardListScreen(viewModel: CreditCardViewModel = koinViewModel()) {
         }
     }
     if (showForm) CardFormDialog(
-        onDismiss = { showForm = false },
+        initial = editing?.let { viewModel.toFormState(it) },
+        onDismiss = { showForm = false; editing = null },
         onSave = { form ->
             viewModel.save(form, MoneyFormatter.parseBrlToCents(form.limit).takeIf { form.limit.isNotBlank() })
             showForm = false
+            editing = null
         }
     )
     message?.let { AppDialog("Mensagem", { viewModel.consumeMessage() }, { viewModel.consumeMessage() }, "OK") { Text(it) } }
 }
 
 @Composable
-private fun CardFormDialog(onDismiss: () -> Unit, onSave: (CardFormState) -> Unit) {
-    var form by remember { mutableStateOf(CardFormState()) }
-    AppDialog("Novo cartao", onDismiss, { onSave(form) }) {
+private fun CardFormDialog(initial: CardFormState?, onDismiss: () -> Unit, onSave: (CardFormState) -> Unit) {
+    var form by remember { mutableStateOf(initial ?: CardFormState()) }
+    val title = if (initial?.id != null) "Editar cartao" else "Novo cartao"
+    AppDialog(title, onDismiss, { onSave(form) }) {
         LabeledTextField("Apelido", form.nickname, { form = form.copy(nickname = it) })
         LabeledTextField("Banco ou instituicao", form.institution, { form = form.copy(institution = it) })
         LabeledTextField("Limite opcional", form.limit, { form = form.copy(limit = it) })

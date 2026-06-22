@@ -32,6 +32,8 @@ fun BackupScreen(viewModel: BackupViewModel = koinViewModel()) {
     val context = LocalContext.current
     val message by viewModel.message.collectAsState()
     val pending by viewModel.pendingImport.collectAsState()
+    val lastExport by viewModel.lastExportAt.collectAsState()
+    val lastImport by viewModel.lastImportAt.collectAsState()
     var exportText by remember { mutableStateOf<String?>(null) }
 
     val createLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
@@ -61,6 +63,8 @@ fun BackupScreen(viewModel: BackupViewModel = koinViewModel()) {
 
     Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Backup")
+        Text("Ultimo backup exportado: ${viewModel.formatLastBackup(lastExport)}")
+        Text("Ultima importacao: ${viewModel.formatLastBackup(lastImport)}")
         Button(onClick = { viewModel.prepareExport() }, modifier = Modifier.fillMaxWidth()) { Text("Exportar JSON") }
         Button(onClick = { openLauncher.launch(arrayOf("application/json", "text/*", "*/*")) }, modifier = Modifier.fillMaxWidth()) { Text("Importar JSON") }
         Text("A importacao substitui todos os dados atuais apos confirmacao.")

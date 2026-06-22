@@ -20,6 +20,7 @@ import com.vitor.controlefinanceiro.domain.model.PaymentMethod
 import com.vitor.controlefinanceiro.domain.usecase.CalculateCreditCardInvoiceUseCase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import java.time.LocalDate
 import java.util.UUID
 
@@ -115,6 +116,8 @@ class RecurringExpenseRepository(private val dao: RecurringExpenseDao) {
         require(recurring.launchDay in 1..31) { "O dia deve estar entre 1 e 31." }
         dao.upsert(recurring)
     }
+    suspend fun delete(id: String) = dao.delete(id)
+    suspend fun setActive(recurring: RecurringExpenseEntity, active: Boolean) = dao.upsert(recurring.copy(active = active, updatedAt = DateUtils.nowMillis()))
 }
 
 data class DashboardSummary(
@@ -129,6 +132,16 @@ data class DashboardSummary(
     val totalDebito: Long = 0,
     val totalBoleto: Long = 0
 )
+
+sealed class RecentTransaction {
+    abstract val timestamp: Long
+    data class Expense(val item: ExpenseEntity) : RecentTransaction() {
+        override val timestamp: Long get() = maxOf(item.purchaseDate, item.createdAt)
+    }
+    data class Income(val item: IncomeEntity) : RecentTransaction() {
+        override val timestamp: Long get() = maxOf(item.date, item.createdAt)
+    }
+}
 
 class DashboardRepository(
     private val incomeRepository: IncomeRepository,
@@ -150,6 +163,15 @@ class DashboardRepository(
                 totalDebito = considered.filter { it.paymentMethod == PaymentMethod.DEBITO }.sumOf { it.amountCents },
                 totalBoleto = considered.filter { it.paymentMethod == PaymentMethod.BOLETO }.sumOf { it.amountCents }
             )
+        }
+    }
+
+    fun observeRecent(limit: Int = 5): Flow<List<RecentTransaction>> {
+        return combine(incomeRepository.observeAll(), expenseRepository.observeAll()) { incomes, expenses ->
+            val combined = mutableListOf<RecentTransaction>()
+            combined += incomes.map { RecentTransaction.Income(it) }
+            combined += expenses.map { RecentTransaction.Expense(it) }
+            combined.sortedByDescending { it.timestamp }.take(limit)
         }
     }
 }

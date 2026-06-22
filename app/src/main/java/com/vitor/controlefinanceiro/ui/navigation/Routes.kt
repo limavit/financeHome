@@ -8,4 +8,5 @@ object Routes {
     const val More = "more"
     const val Categories = "categories"
     const val Backup = "backup"
+    const val Recurring = "recurring"
 }

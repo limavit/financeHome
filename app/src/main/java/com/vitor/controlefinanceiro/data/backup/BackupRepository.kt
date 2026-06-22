@@ -6,13 +6,18 @@ import com.vitor.controlefinanceiro.core.json.JsonConfig
 import com.vitor.controlefinanceiro.core.result.AppResult
 import com.vitor.controlefinanceiro.data.local.AppDatabase
 import com.vitor.controlefinanceiro.data.local.entity.AppMetadataEntity
+import com.vitor.controlefinanceiro.data.preferences.AppPreferencesRepository
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 
-class BackupRepository(private val db: AppDatabase) {
+class BackupRepository(
+    private val db: AppDatabase,
+    private val appPreferencesRepository: AppPreferencesRepository
+) {
     suspend fun exportJson(): String {
+        val exportedAt = DateUtils.nowMillis()
         val dto = BackupDto(
-            exportedAt = DateUtils.nowMillis(),
+            exportedAt = exportedAt,
             categories = db.categoryDao().getAll().map { it.toBackup() },
             incomes = db.incomeDao().getAll().map { it.toBackup() },
             expenses = db.expenseDao().getAll().map { it.toBackup() },
@@ -20,7 +25,8 @@ class BackupRepository(private val db: AppDatabase) {
             recurringExpenses = db.recurringExpenseDao().getAll().map { it.toBackup() },
             metadata = db.metadataDao().getAll().associate { it.toPair() }
         )
-        db.metadataDao().upsert(AppMetadataEntity("last_export_at", dto.exportedAt.toString()))
+        db.metadataDao().upsert(AppMetadataEntity("last_export_at", exportedAt.toString()))
+        appPreferencesRepository.setLastExportAt(exportedAt)
         return JsonConfig.json.encodeToString(dto)
     }
 
@@ -37,6 +43,7 @@ class BackupRepository(private val db: AppDatabase) {
     }
 
     suspend fun importReplacing(dto: BackupDto) {
+        val importedAt = DateUtils.nowMillis()
         db.withTransaction {
             db.expenseDao().deleteAll()
             db.recurringExpenseDao().deleteAll()
@@ -50,8 +57,9 @@ class BackupRepository(private val db: AppDatabase) {
             dto.recurringExpenses.forEach { db.recurringExpenseDao().upsert(it.toEntity()) }
             dto.expenses.forEach { db.expenseDao().upsert(it.toEntity()) }
             dto.metadata.forEach { (key, value) -> db.metadataDao().upsert(AppMetadataEntity(key, value)) }
-            db.metadataDao().upsert(AppMetadataEntity("last_import_at", DateUtils.nowMillis().toString()))
+            db.metadataDao().upsert(AppMetadataEntity("last_import_at", importedAt.toString()))
         }
+        appPreferencesRepository.setLastImportAt(importedAt)
     }
 }
 

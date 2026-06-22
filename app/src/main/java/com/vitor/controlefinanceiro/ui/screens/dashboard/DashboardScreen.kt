@@ -1,6 +1,7 @@
 package com.vitor.controlefinanceiro.ui.screens.dashboard
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -8,7 +9,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -16,9 +19,18 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.vitor.controlefinanceiro.core.date.DateUtils
+import com.vitor.controlefinanceiro.core.money.MoneyFormatter
+import com.vitor.controlefinanceiro.data.repository.RecentTransaction
+import com.vitor.controlefinanceiro.ui.components.EmptyText
 import com.vitor.controlefinanceiro.ui.components.MoneyCard
+import com.vitor.controlefinanceiro.ui.components.SectionCard
 import com.vitor.controlefinanceiro.ui.components.monthLabel
 import org.koin.androidx.compose.koinViewModel
 
@@ -26,19 +38,29 @@ import org.koin.androidx.compose.koinViewModel
 fun DashboardScreen(
     onAddIncome: () -> Unit,
     onAddExpense: () -> Unit,
-    onCards: () -> Unit,
-    onCategories: () -> Unit,
-    onBackup: () -> Unit,
     viewModel: DashboardViewModel = koinViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
-    Scaffold { padding ->
+    var fabExpanded by remember { mutableStateOf(false) }
+    Scaffold(
+        floatingActionButton = {
+            Box {
+                FloatingActionButton(onClick = { fabExpanded = true }) {
+                    Text("+")
+                }
+                DropdownMenu(expanded = fabExpanded, onDismissRequest = { fabExpanded = false }) {
+                    DropdownMenuItem(text = { Text("Nova entrada") }, onClick = { fabExpanded = false; onAddIncome() })
+                    DropdownMenuItem(text = { Text("Novo gasto") }, onClick = { fabExpanded = false; onAddExpense() })
+                }
+            }
+        }
+    ) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = viewModel::previousMonth) { Text("<") }
                     Text(monthLabel(state.year, state.month), style = MaterialTheme.typography.titleLarge)
                     TextButton(onClick = viewModel::nextMonth) { Text(">") }
@@ -61,13 +83,18 @@ fun DashboardScreen(
                     }
                 }
             }
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = onAddIncome, modifier = Modifier.fillMaxWidth()) { Text("Adicionar entrada") }
-                    Button(onClick = onAddExpense, modifier = Modifier.fillMaxWidth()) { Text("Adicionar gasto") }
-                    Button(onClick = onCards, modifier = Modifier.fillMaxWidth()) { Text("Cartoes") }
-                    Button(onClick = onCategories, modifier = Modifier.fillMaxWidth()) { Text("Categorias") }
-                    Button(onClick = onBackup, modifier = Modifier.fillMaxWidth()) { Text("Backup") }
+            item { Text("Ultimos lancamentos", style = MaterialTheme.typography.titleMedium) }
+            if (state.recent.isEmpty()) item { EmptyText("Nenhum lancamento ainda.") }
+            items(state.recent) { tx ->
+                when (tx) {
+                    is RecentTransaction.Expense -> SectionCard(tx.item.name) {
+                        Text("- ${MoneyFormatter.formatCentsToBrl(tx.item.amountCents)} - ${tx.item.paymentMethod}")
+                        Text("Compra: ${DateUtils.formatBrDate(DateUtils.millisToDate(tx.item.purchaseDate))}")
+                    }
+                    is RecentTransaction.Income -> SectionCard(tx.item.description) {
+                        Text("+ ${MoneyFormatter.formatCentsToBrl(tx.item.amountCents)} - ${tx.item.type.name}")
+                        Text(DateUtils.formatBrDate(DateUtils.millisToDate(tx.item.date)))
+                    }
                 }
             }
         }

@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 data class CategoryFormState(
+    val id: String? = null,
     val name: String = "",
     val type: CategoryType = CategoryType.AMBOS
 )
@@ -21,10 +22,16 @@ class CategoryViewModel(private val repository: CategoryRepository) : ViewModel(
 
     fun save(form: CategoryFormState) = viewModelScope.launch {
         runCatching {
-            repository.save(form.name, form.type)
-            message.value = "Categoria salva."
+            repository.save(form.name, form.type, id = form.id ?: java.util.UUID.randomUUID().toString())
+            message.value = if (form.id != null) "Categoria atualizada." else "Categoria salva."
         }.onFailure { message.value = it.message ?: "Nao foi possivel salvar." }
     }
+
+    fun toFormState(category: CategoryEntity): CategoryFormState = CategoryFormState(
+        id = category.id,
+        name = category.name,
+        type = category.type
+    )
 
     fun setActive(category: CategoryEntity, active: Boolean) = viewModelScope.launch {
         repository.setActive(category, active)

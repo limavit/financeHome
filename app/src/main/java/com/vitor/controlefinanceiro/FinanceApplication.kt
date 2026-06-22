@@ -21,6 +21,7 @@ import com.vitor.controlefinanceiro.ui.screens.categories.CategoryViewModel
 import com.vitor.controlefinanceiro.ui.screens.dashboard.DashboardViewModel
 import com.vitor.controlefinanceiro.ui.screens.expenses.ExpenseViewModel
 import com.vitor.controlefinanceiro.ui.screens.incomes.IncomeViewModel
+import com.vitor.controlefinanceiro.ui.screens.recurring.RecurringViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.androidx.viewmodel.dsl.viewModel
@@ -57,7 +58,7 @@ val appModule = module {
     single { ExpenseRepository(get(), get(), get()) }
     single { RecurringExpenseRepository(get()) }
     single { DashboardRepository(get(), get()) }
-    single { BackupRepository(get()) }
+    single { BackupRepository(get(), get()) }
     single { AppPreferencesRepository(get()) }
     single { GenerateRecurringExpensesUseCase(get(), get(), get(), get()) }
     single { ExportBackupUseCase(get()) }
@@ -67,5 +68,6 @@ val appModule = module {
     viewModel { ExpenseViewModel(get(), get(), get(), get()) }
     viewModel { CreditCardViewModel(get(), get()) }
     viewModel { CategoryViewModel(get()) }
-    viewModel { BackupViewModel(get(), get()) }
+    viewModel { BackupViewModel(get(), get(), get()) }
+    viewModel { RecurringViewModel(get(), get(), get()) }
 }

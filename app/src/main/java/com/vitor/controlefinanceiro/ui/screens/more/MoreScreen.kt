@@ -12,11 +12,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun MoreScreen(onCategories: () -> Unit, onBackup: () -> Unit) {
+fun MoreScreen(onCategories: () -> Unit, onBackup: () -> Unit, onRecurring: () -> Unit) {
     Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Mais")
         Button(onClick = onCategories, modifier = Modifier.fillMaxWidth()) { Text("Categorias") }
+        Button(onClick = onRecurring, modifier = Modifier.fillMaxWidth()) { Text("Recorrencias") }
         Button(onClick = onBackup, modifier = Modifier.fillMaxWidth()) { Text("Backup") }
-        Text("Recorrencias sao criadas ao marcar um gasto como recorrente.")
     }
 }

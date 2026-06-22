@@ -19,6 +19,7 @@ import com.vitor.controlefinanceiro.ui.screens.dashboard.DashboardScreen
 import com.vitor.controlefinanceiro.ui.screens.expenses.ExpenseListScreen
 import com.vitor.controlefinanceiro.ui.screens.incomes.IncomeListScreen
 import com.vitor.controlefinanceiro.ui.screens.more.MoreScreen
+import com.vitor.controlefinanceiro.ui.screens.recurring.RecurringListScreen
 
 @Composable
 fun AppNavHost() {
@@ -57,18 +58,22 @@ fun AppNavHost() {
             composable(Routes.Dashboard) {
                 DashboardScreen(
                     onAddIncome = { navController.navigate(Routes.Incomes) },
-                    onAddExpense = { navController.navigate(Routes.Expenses) },
-                    onCards = { navController.navigate(Routes.Cards) },
-                    onCategories = { navController.navigate(Routes.Categories) },
-                    onBackup = { navController.navigate(Routes.Backup) }
+                    onAddExpense = { navController.navigate(Routes.Expenses) }
                 )
             }
             composable(Routes.Expenses) { ExpenseListScreen() }
             composable(Routes.Incomes) { IncomeListScreen() }
             composable(Routes.Cards) { CreditCardListScreen() }
-            composable(Routes.More) { MoreScreen(onCategories = { navController.navigate(Routes.Categories) }, onBackup = { navController.navigate(Routes.Backup) }) }
+            composable(Routes.More) {
+                MoreScreen(
+                    onCategories = { navController.navigate(Routes.Categories) },
+                    onBackup = { navController.navigate(Routes.Backup) },
+                    onRecurring = { navController.navigate(Routes.Recurring) }
+                )
+            }
             composable(Routes.Categories) { CategoryListScreen() }
             composable(Routes.Backup) { BackupScreen() }
+            composable(Routes.Recurring) { RecurringListScreen() }
         }
     }
 }
