@@ -14,6 +14,9 @@ local.properties
 *.aab
 *.aar
 
+# Allow versioned APKs under releases/
+!releases/**/*.apk
+
 # Kotlin/Java
 *.class
 *.jar
